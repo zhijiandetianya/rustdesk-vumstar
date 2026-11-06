@@ -1,0 +1,59 @@
+name: Sync Upstream To Branch
+
+# 把官方 RustDesk 指定 tag 的完整代码拉成本仓库的一个新分支，
+# 供 Windows 构建工作流以该分支为 ref 运行。
+# 这样无需在本地做几 GB 的 git 传输。
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream-tag:
+        description: "官方 tag，例如 1.5.1"
+        type: string
+        default: "1.5.1"
+      target-branch:
+        description: "同步到的分支名"
+        type: string
+        default: "v151"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone upstream at tag
+        run: |
+          git clone --depth 1 --branch "${{ inputs.upstream-tag }}" \
+            https://github.com/rustdesk/rustdesk.git src
+          cd src
+          git log --oneline -1
+          echo "files: $(git ls-files | wc -l)"
+
+      - name: Clone our repo to reuse workflow files
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ours
+
+      - name: Compose target branch
+        run: |
+          set -e
+          cd src
+          git checkout -B "${{ inputs.target-branch }}"
+          git config user.name "vumstar-ci"
+          git config user.email "vumstar-ci@users.noreply.github.com"
+
+          cp ../ours/.github/workflows/build-windows-vumstar.yml .github/workflows/
+          git add .github/workflows/build-windows-vumstar.yml
+
+          git commit -m "ci: windows build for upstream ${{ inputs.upstream-tag }}"
+          git log --oneline -2
+
+      - name: Push branch
+        run: |
+          cd src
+          git push -f \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            "${{ inputs.target-branch }}"
+          echo "pushed to ${{ inputs.target-branch }}"
