@@ -25,11 +25,16 @@ jobs:
     steps:
       - name: Clone upstream at tag
         run: |
-          git clone --depth 1 --branch "${{ inputs.upstream-tag }}" \
+          set -e
+          # 注意：不能用 --depth 1。浅克隆的仓库推到全新空仓库时，
+          # 远端的 index-pack 会因为缺少基础对象而失败：
+          #   remote: fatal: did not receive expected object ...
+          git clone --branch "${{ inputs.upstream-tag }}" --single-branch \
             https://github.com/rustdesk/rustdesk.git src
           cd src
           git log --oneline -1
           echo "files: $(git ls-files | wc -l)"
+          echo "size: $(du -sh .git | cut -f1)"
 
       - name: Clone our repo to reuse workflow files
         run: |
@@ -53,7 +58,8 @@ jobs:
       - name: Push branch
         run: |
           cd src
-          git push -f \
+          git config http.postBuffer 524288000
+          git push -f --no-thin \
             "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
             "${{ inputs.target-branch }}"
           echo "pushed to ${{ inputs.target-branch }}"
