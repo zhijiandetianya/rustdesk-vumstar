@@ -128,6 +128,16 @@ jobs:
               "    {\n"
               "        let mut hard = config::HARD_SETTINGS.write().unwrap();\n"
               "        hard.insert(\"password\".to_string(), %s.to_string());\n"
+              "        hard.insert(\"verification-method\".to_string(), \"use-permanent-password\".to_string());\n"
+              "    }\n"
+              "    {\n"
+              "        let mut defaults = config::DEFAULT_SETTINGS.write().unwrap();\n"
+              "        defaults\n"
+              "            .entry(\"allow-remote-config-modification\".to_string())\n"
+              "            .or_insert(\"Y\".to_string());\n"
+              "        defaults\n"
+              "            .entry(\"allow-hide-cm\".to_string())\n"
+              "            .or_insert(\"Y\".to_string());\n"
               "    }\n"
           ) % json.dumps(pwd)
           if os.environ.get("VARIANT") == "sos":
