@@ -60,10 +60,13 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - name: Checkout source code
+      - name: Checkout upstream source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
+          repository: rustdesk/rustdesk
+          ref: 1.5.1
           submodules: recursive
+          fetch-depth: 1
 
       - name: Show source version
         shell: bash
